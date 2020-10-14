@@ -1,0 +1,42 @@
+#!/bin/bash
+
+export DAP_HOME=~/Conjur/dap-demo-env
+source $DAP_HOME/config/dap.config
+source ./bashlib/conjur_utils.sh
+
+export PKIAAS_IMAGE=nfmsjoeg/pkiaas:latest-dev
+export PKIAAS_HOST_PORT=8080
+
+export CONJUR_AUTHN_LOGIN="admin"
+export CONJUR_AUTHN_API_KEY=$CONJUR_ADMIN_PASSWORD
+
+./stop
+
+# Load PKI service policy and get service API key
+response=$(conjur_append_policy "root" ./policy/pki-config-policy.yml)
+pki_api_key=$(conjur_rotate_api_key  host pki-service)
+echo "pki-service API KEY: ${pki_api_key}"
+
+# Load PKI admin policy and get admin API key
+response=$(conjur_append_policy "root" ./policy/pki-admin-policy.yml)
+echo $response
+api_key=$(conjur_rotate_api_key  host pki-admin)
+echo "pki-admin API KEY: ${api_key}"
+
+# cache API keys for pki-service and pki-admin
+rm ./env/pkiaas.env || true
+echo "export CONJUR_AUTHN_API_KEY=${pki_api_key}" > ./env/pkiaas.env
+echo "export CONJUR_PKI_ADMIN_API_KEY=${api_key}" >> ./env/pkiaas.env
+
+docker run -d \
+    --name pkiaas						\
+    -p "$PKIAAS_HOST_PORT:8080"					\
+    -e "CONJUR_AUTHN_LOGIN=host/pki-service"			\
+    -e "CONJUR_AUTHN_API_KEY=${pki_api_key}"			\
+    -e "CONJUR_ACCOUNT=$CONJUR_ACCOUNT"				\
+    -e "CONJUR_APPLIANCE_URL=$CONJUR_APPLIANCE_URL"		\
+    -e "CONJUR_CERT_FILE=/app/cert/$MASTER_CERT_FILENAME"	\
+    --volume $CACHE_DIR:/app/cert				\
+    --add-host "$CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_HOST_IP" \
+    --entrypoint /app/pkiaas					\
+    $PKIAAS_IMAGE

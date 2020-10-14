@@ -1,0 +1,2 @@
+source ../config/dap.config
+docker-compose down -v

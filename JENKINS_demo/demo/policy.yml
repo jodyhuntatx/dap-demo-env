@@ -1,0 +1,22 @@
+---
+- !policy
+  id: jenkins
+  annotations:
+    description: Conjur policy for Jenkins
+    jenkins: "true"
+  body:
+    - !host master
+
+    - !layer test_jobs
+    - !host TestJob1
+    - !grant
+      role: !layer test_jobs
+      members:
+      - !host TestJob1
+
+# Permit Jenkins master to retrieve all secrets
+- !grant
+  roles:
+    - !group DemoVault/CICD/CICD_Secrets/delegation/consumers
+  members:
+    - !host jenkins/master

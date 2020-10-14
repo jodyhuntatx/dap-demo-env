@@ -1,0 +1,13 @@
+---
+# Grant {{ DEVELOPER_USERNAME }} read-only access to the DAP config map
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: dap-cm-access-{{ DEVELOPER_USERNAME }}
+roleRef:
+  kind: ClusterRole
+  name: dap-cm-access-role
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: User
+  name: {{ DEVELOPER_USERNAME }}

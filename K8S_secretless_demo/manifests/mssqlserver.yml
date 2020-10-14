@@ -1,0 +1,46 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: mssqlserver-db
+  namespace: testapps
+spec:
+  selector:
+    app: mssqlserver-db
+  ports:
+    - port: 1433
+      targetPort: 1433
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mssqlserver-db
+  labels:
+    app: mssqlserver-db
+spec:
+  serviceName: mssqlserver-db
+  selector:
+    matchLabels:
+      app: mssqlserver-db
+  template:
+    metadata:
+      labels:
+        app: mssqlserver-db
+    spec:
+      serviceAccountName: secretless-stateful-app
+      securityContext:
+        fsGroup: 999
+      containers:
+      - name: mssqlserver-db
+        imagePullPolicy: Always
+        image: 192.168.68.106:5000/mssqlserver:latest
+        ports:
+          - containerPort: 1433
+        env:
+          - name: ACCEPT_EULA
+            value: "yes"
+          - name: SA_PASSWORD
+            value: CYberark11!!
+          - name: MSSQL_PID
+            value: Developer

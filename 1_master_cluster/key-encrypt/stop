@@ -1,0 +1,3 @@
+#!/bin/bash
+source ./keymgmt.config
+docker stop $CONJUR_FOLLOWER_CONTAINER_NAME && docker rm $CONJUR_FOLLOWER_CONTAINER_NAME > /dev/null

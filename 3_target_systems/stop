@@ -1,0 +1,7 @@
+#!/bin/bash
+echo "Stopping mysql db.."
+bash -c "docker stop mysql >& /dev/null; docker rm mysql >& /dev/null" &
+
+echo "Stopping db-client.."
+bash -c "docker stop db-client >& /dev/null; docker rm db-client >& /dev/null" &
+

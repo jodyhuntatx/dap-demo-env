@@ -1,0 +1,29 @@
+#!/bin/bash
+set -o pipefail
+
+source ../config/dap.config
+source ../config/utils.sh
+
+announce "Deleting Secretless deployment."
+$CLI delete secret test-app-secret -n $TEST_APP_NAMESPACE_NAME --ignore-not-found 
+$CLI delete secret dockerpullsecret -n $TEST_APP_NAMESPACE_NAME --ignore-not-found 
+
+$CLI delete --ignore-not-found -n $TEST_APP_NAMESPACE_NAME \
+     configmap/secretless-config \
+     serviceaccount/$SECRETLESS_SERVICEACCOUNT_NAME
+$CLI delete -f ./manifests/postgres.yml --ignore-not-found -n $TEST_APP_NAMESPACE_NAME
+$CLI delete -f ./manifests/mysql.yml --ignore-not-found -n $TEST_APP_NAMESPACE_NAME
+$CLI delete -f ./manifests/mssqlserver.yml --ignore-not-found -n $TEST_APP_NAMESPACE_NAME
+$CLI delete -f ./manifests/nginx.yml --ignore-not-found -n $TEST_APP_NAMESPACE_NAME
+$CLI delete --ignore-not-found -n $TEST_APP_NAMESPACE_NAME \
+     deployment/test-app-secretless \
+     deployment/petstore \
+     service/petstore \
+     &
+
+echo "Waiting for pods to terminate"
+while [[ "$($CLI get pods -n $TEST_APP_NAMESPACE_NAME | grep postgres)" != "" ]]; do
+  sleep 4
+  echo -n '.'
+done
+echo

@@ -1,0 +1,82 @@
+#!/bin/bash 
+set -eo pipefail
+
+source ../config/dap.config
+source ./cicd-demo.conf
+
+main() {
+  load_policy
+  generate_identity_files
+  docker-compose up -d
+  initialize_client_node
+  clear
+  docker exec -it client_node bash
+}
+
+load_policy() {
+  # load policy
+  load_policy_REST.sh root ./policy/cicd-policy.yml
+
+  echo "Initializing variables..."
+  var_value_add_REST.sh cicd-secrets/test-db-username ThisIsTheTESTDBuserName
+  var_value_add_REST.sh cicd-secrets/test-db-password 10938471084710238470973
+  var_value_add_REST.sh cicd-secrets/prod-db-username ThisIsThePRODDBuserName
+  var_value_add_REST.sh cicd-secrets/prod-db-password aoiuaspduperjqkjnsoudoo
+  var_value_add_REST.sh cicd-secrets/aws-access-key-id 909808awsaccesskeyid19238474
+  var_value_add_REST.sh cicd-secrets/aws-secret-key 908089awssecretkey8098098
+  var_value_add_REST.sh cicd-secrets/aws-creds-template "$(cat aws-creds.template)"
+  var_value_add_REST.sh cicd-secrets/aws-ssh-key "$(cat $AWS_SSH_KEY)"
+}
+
+generate_identity_files() {
+  CONJUR_AUTHN_API_KEY=$(conjur_rotate_api_key host $CONJUR_AUTHN_LOGIN)
+
+  # create configuration and identity files (AKA conjurize the host)
+  echo "Generating identity file..."
+  cat <<IDENTITY_EOF | tee conjur.identity
+machine $CONJUR_APPLIANCE_URL/authn
+  login host/$CONJUR_AUTHN_LOGIN
+  password $CONJUR_AUTHN_API_KEY
+IDENTITY_EOF
+
+  echo
+  echo "Generating host configuration file..."
+  cat <<CONF_EOF | tee conjur.conf
+---
+appliance_url: $CONJUR_APPLIANCE_URL
+account: $CONJUR_ACCOUNT
+netrc_path: "/etc/conjur.identity"
+cert_file: "/etc/conjur-$CONJUR_ACCOUNT.pem"
+CONF_EOF
+}
+
+initialize_client_node() {
+set -x
+  docker cp $MASTER_CERT_FILE client_node:/etc/conjur-$CONJUR_ACCOUNT.pem
+  docker cp ./conjur.conf client_node:/etc
+  docker cp ./conjur.identity client_node:/etc
+  docker exec client_node chmod 400 /etc/conjur.identity
+  rm ./conjur*
+  docker exec -it client_node terraform init
+  docker cp ./demo/. client_node:/demo/
+}
+
+# this will return the authorization header used for api calls for other methods
+function conjur_authenticate {
+    api_key=$(curl --fail -s -k --user "admin:$CONJUR_ADMIN_PASSWORD" $CONJUR_APPLIANCE_URL/authn/$CONJUR_ACCOUNT/login)
+	session_token=$(curl $CONJUR_VERBOSE --fail -s -k --data "$api_key" $CONJUR_APPLIANCE_URL/authn/$CONJUR_ACCOUNT/admin/authenticate)
+	token=$(echo -n $session_token | base64 | tr -d '\r\n')
+	header="Authorization: Token token=\"$token\""
+	echo "$header"
+}
+
+function conjur_rotate_api_key {
+	local kind=$1; shift
+	local id=$1; shift
+	$util_defaults
+	header=$(conjur_authenticate)
+	api_key=$(curl -X PUT -k -s -H "$header" "$CONJUR_APPLIANCE_URL/authn/${CONJUR_ACCOUNT}/api_key?role=$CONJUR_ACCOUNT:${kind}:${id}")
+	echo $api_key
+}
+
+main $@

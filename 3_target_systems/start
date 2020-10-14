@@ -1,0 +1,50 @@
+#!/bin/bash
+
+source ../config/dap.config
+
+main() {
+  ./precheck_db.sh
+  ./stop
+  while [[ "$(docker ps -a | grep mysql)" != "" 		\
+	   || "$(docker ps -a | grep db-client)" != "" ]]; do
+    echo -n '.'
+    sleep 3
+  done
+
+  deploy_mysql
+  deploy_db_client
+  echo "Waiting for MySQL DB to be available..."
+  sleep 30
+  init_mysql
+}
+
+################################
+deploy_mysql() {
+  echo
+  echo "Bringing up mysql db container..."
+  docker run -d						\
+    --name mysql					\
+    -p "3306:3306"					\
+    -e MYSQL_ROOT_PASSWORD=$CONJUR_ADMIN_PASSWORD	\
+    --restart unless-stopped				\
+    mysql:latest
+}
+
+################################
+deploy_db_client() {
+  echo "Bringing up db-client container..."
+  docker run -d							 \
+    --name db-client						 \
+    --add-host "$CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_HOST_IP" \
+    db-client:latest
+}
+
+################################
+init_mysql() {
+  echo "Initializing MySQL database..."
+  cat db_load.sql		\
+  | docker exec -i db-client	\
+	mysql -h $CONJUR_MASTER_HOST_NAME -u root --password=$CONJUR_ADMIN_PASSWORD
+}
+
+main "$@"
