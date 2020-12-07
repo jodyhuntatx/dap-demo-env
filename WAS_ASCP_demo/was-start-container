@@ -68,7 +68,7 @@ start_cp() {
 
 ######################
 start_was_server() {
-  echo "Starting WAS server..."
+  echo "Starting WAS server, this takes a few minutes..."
 
   docker exec $DEMO_CONTAINER \
 	/opt/IBM/WebSphere/AppServer/profiles/default/bin/startServer.sh server1

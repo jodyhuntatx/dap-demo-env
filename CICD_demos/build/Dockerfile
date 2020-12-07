@@ -50,7 +50,8 @@ RUN cd /tmp \
     && tar xvzf terraform-provider-conjur-linux-amd64.tar.gz \
     && rm terraform-provider-conjur-linux-amd64.tar.gz \
     && mkdir -p ~/.terraform.d/plugins \
-    && mv terraform-provider-conjur ~/.terraform.d/plugins
+    && mv terraform-provider-conjur ~/.terraform.d/plugins \
+    && echo foo
 
 # install AWS CLI
 RUN pip install awscli --upgrade --user

@@ -1,2 +1,0 @@
-- !delete
-  record: !host client/node1

@@ -1,16 +1,17 @@
 #!/bin/bash 
-set -eo pipefail
+set -o pipefail
 
 source ../config/dap.config
 source ./cicd-demo.conf
 
 main() {
+  ./stop
   load_policy
   generate_identity_files
-  docker-compose up -d
-  initialize_client_node
-  clear
-  docker exec -it client_node bash
+  build_image
+  start_container
+  initialize_demo
+  docker exec -it $CICD_DEMO_CONTAINER bash
 }
 
 load_policy() {
@@ -50,15 +51,33 @@ cert_file: "/etc/conjur-$CONJUR_ACCOUNT.pem"
 CONF_EOF
 }
 
-initialize_client_node() {
+build_image() {
+  cd build
+    ./build.sh
+  cd .. 
+}
+
+start_container() {
+    docker run -d \
+    --name $CICD_DEMO_CONTAINER \
+    --add-host "$CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_HOST_IP" \
+    -e "CONJUR_MASTER_HOST_NAME=$CONJUR_MASTER_HOST_NAME" \
+    -e "TERM=xterm" \
+    --restart always \
+    --entrypoint "sh" \
+    $CICD_DEMO_IMAGE \
+    -c "sleep infinity"
+}
+
+initialize_demo() {
 set -x
-  docker cp $MASTER_CERT_FILE client_node:/etc/conjur-$CONJUR_ACCOUNT.pem
-  docker cp ./conjur.conf client_node:/etc
-  docker cp ./conjur.identity client_node:/etc
-  docker exec client_node chmod 400 /etc/conjur.identity
+  docker cp $MASTER_CERT_FILE $CICD_DEMO_CONTAINER:/etc/conjur-$CONJUR_ACCOUNT.pem
+  docker cp ./conjur.conf $CICD_DEMO_CONTAINER:/etc
+  docker cp ./conjur.identity $CICD_DEMO_CONTAINER:/etc
+  docker exec $CICD_DEMO_CONTAINER chmod 400 /etc/conjur.identity
   rm ./conjur*
-  docker exec -it client_node terraform init
-  docker cp ./demo/. client_node:/demo/
+  docker exec -it $CICD_DEMO_CONTAINER terraform init
+  docker cp ./demo/. $CICD_DEMO_CONTAINER:/demo/
 }
 
 # this will return the authorization header used for api calls for other methods

@@ -1,28 +1,40 @@
 #!/bin/bash
-
 source ./javademo.config
 
-		# if not here, build the jarfile
-if [[ ! -f JavaDemo.jar ]]; then
-  pushd build
-    ./build.sh
-    mv JavaDemo.jar ..
-  popd
-fi
-		# if not here, build java key store
-if [[ ! -f $JAVA_KEY_STORE_FILE ]]; then
-  echo "Initializing Java key store..."
-  keytool -importcert -trustcacerts -file $MASTER_CERT_FILE -keystore $JAVA_KEY_STORE_FILE &> /dev/null <<EOF
-$JAVA_KEY_STORE_PASSWORD
-$JAVA_KEY_STORE_PASSWORD
-yes
-EOF
-fi
-		# default to host id retrieval
-OP_ARG=$1
-if [[ "$OP_ARG" == "" ]]; then
-  OP_ARG=host
-fi
+./stop
 
-# run the app
-java -jar JavaDemo.jar $OP_ARG
+# Build linux container w/ default jre and jdk
+docker build . -t javademo:latest
+
+# Load conjur policy to create host & secrets
+cat javademo-policy.yaml | docker exec -i conjur-cli conjur policy load root -
+
+# Set values for secrets
+docker exec conjur-cli conjur variable values add secrets/db-username ThisIsTheUsername
+docker exec conjur-cli conjur variable values add secrets/db-password ThisIsTheDBpassword
+
+# Set api key for host
+export CONJUR_AUTHN_API_KEY=$(docker exec -i conjur-cli conjur host rotate_api_key -h java_client/node1)
+
+# Start demo container
+docker run -d			\
+    -h javademo			\
+    --name javademo		\
+    --add-host "$CONJUR_MASTER_HOST_NAME:$CONJUR_MASTER_HOST_IP"	\
+    -e "CONJUR_APPLIANCE_URL=$CONJUR_APPLIANCE_URL"			\
+    -e "CONJUR_ACCOUNT=$CONJUR_ACCOUNT"					\
+    -e "CONJUR_AUTHN_LOGIN=$CONJUR_AUTHN_LOGIN"				\
+    -e "CONJUR_AUTHN_API_KEY=$CONJUR_AUTHN_API_KEY"			\
+    -e "CONJUR_VAR_ID=$CONJUR_VAR_ID"					\
+    -e "JAVA_KEY_STORE_FILE=$JAVA_KEY_STORE_FILE"			\
+    -e "JAVA_KEY_STORE_PASSWORD=$JAVA_KEY_STORE_PASSWORD"		\
+    --entrypoint sh		\
+    javademo:latest		\
+    -c "sleep infinity"
+
+# Copy cert & demo files into container
+cp $MASTER_CERT_FILE ./demo/conjur-master.pem
+docker cp demo javademo:/
+
+# Run the demo
+docker exec -it javademo ./run_demo.sh

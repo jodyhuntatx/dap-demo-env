@@ -1,2 +1,4 @@
+[test]
+ec2-13-58-161-67.us-east-2.compute.amazonaws.com
 [prod]
-conjur-master
+conjurmaster2.northcentralus.cloudapp.azure.com

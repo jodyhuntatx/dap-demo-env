@@ -26,7 +26,9 @@
 
 # Permit node to access all CICD secrets synced from EPV
 - !grant
-  role: !group DemoVault/CICD/CICD_Secrets/delegation/consumers
+  roles:
+  - !group DemoVault/CICD/CICD_Secrets/delegation/consumers
+  - !group DemoVault/CICD/CICD_admin/delegation/consumers
   member: !host client/node  
 
   # Permit node identity to retrieve secrets

@@ -1,2 +1,2 @@
 #!/bin/bash 
-docker exec -it client_node bash
+docker exec -it cicddemo bash

@@ -1,0 +1,3 @@
+#!/bin/bash
+echo "Stopping running demo container..."
+docker stop javademo > /dev/null && docker rm javademo > /dev/null

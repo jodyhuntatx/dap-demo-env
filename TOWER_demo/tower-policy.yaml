@@ -1,0 +1,17 @@
+- !policy
+  id: tower
+  body:
+  - !host project1
+  - !variable aws-access-key
+  - !variable aws-secret-key
+  - !permit
+    role: !host project1
+    privilege: [ read, execute ]
+    resources:
+    - !variable aws-access-key
+    - !variable aws-secret-key
+
+- !grant
+  role: !group DemoVault/CICD/CICD_Secrets/delegation/consumers
+  members:
+  - !host tower/project1

@@ -1,7 +1,7 @@
-#!/bin/bash -x
+#!/bin/bash
 
 source ../config/dap.config
-source ../config/$MASTER_PLATFORM.config
+source ../config/$K8S_PLATFORM.k8s
 
 export CONJUR_BACKUP_ARCHIVE=./2020-04-13T15-09-09Z.tar.xz.gpg
 export CONJUR_BACKUP_KEY=./key

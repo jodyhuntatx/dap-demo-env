@@ -6,7 +6,7 @@
 
 # Reads following values from environment variables:
 # - CONJUR_AUTHN_LOGIN
-# - CONJUR_AUTHN_PASSWORD
+# - CONJUR_ADMIN_PASSWORD
 # - CONJUR_APPLIANCE_URL
 # - CONJUR_CERT_FILE
 # - CONJUR_ACCOUNT
@@ -50,13 +50,13 @@ policy_method = Conjur::API::POLICY_METHOD_POST
 #puts "policy_file: #{policy_file}"
 #puts ""
 #puts "CONJUR_AUTHN_LOGIN: #{ENV['CONJUR_AUTHN_LOGIN']}"
-#puts "CONJUR_AUTHN_PASSWORD: #{ENV['CONJUR_AUTHN_PASSWORD']}"
+#puts "CONJUR_ADMIN_PASSWORD: #{ENV['CONJUR_ADMIN_PASSWORD']}"
 #puts "CONJUR_APPLIANCE_URL: #{ENV['CONJUR_APPLIANCE_URL']}"
 #puts "CONJUR_CERT_FILE: #{ENV['CONJUR_CERT_FILE']}"
 #puts "CONJUR_ACCOUNT: #{ENV['CONJUR_ACCOUNT']}"
 
 username = "#{ENV['CONJUR_AUTHN_LOGIN']}"
-password = "#{ENV['CONJUR_AUTHN_PASSWORD']}"
+password = "#{ENV['CONJUR_ADMIN_PASSWORD']}"
 
 # setup Conjur configuration object
 Conjur.configuration.appliance_url = "#{ENV['CONJUR_APPLIANCE_URL']}"

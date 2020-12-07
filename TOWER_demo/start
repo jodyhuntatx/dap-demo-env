@@ -1,0 +1,6 @@
+#!/bin/bash
+source ../config/dap.config
+
+load_policy_REST.sh root ./tower-policy.yaml
+var_get_set_REST.sh set tower/aws-access-key JU75GV43SS08JKG32GH89JH0NG20LW96
+var_get_set_REST.sh set tower/aws-secret-key '*7HHGt^%eFTv%Y9()Po,8^$de@scJJkl'

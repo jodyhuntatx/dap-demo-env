@@ -41,8 +41,8 @@ spec:
         emptyDir:
           medium: Memory
 
-#      initContainers:
-      containers:
+      initContainers:
+#      containers:
       - name: authenticator
         image: {{ CONJUR_SEED_FETCHER_IMAGE }}
         imagePullPolicy: {{ IMAGE_PULL_POLICY }}
@@ -70,6 +70,12 @@ spec:
               configMapKeyRef:
                 name: {{ CONJUR_CONFIG_MAP }}
                 key: AUTHENTICATOR_ID
+
+          - name: CONJUR_APPLIANCE_URL
+            valueFrom:
+              configMapKeyRef:
+                name: {{ CONJUR_CONFIG_MAP }}
+                key: CONJUR_MASTER_URL
 
           - name: CONJUR_ACCOUNT
             valueFrom:
@@ -128,7 +134,7 @@ spec:
           - name: conjur-token
             mountPath: /run/conjur
 
-#      containers:
+      containers:
       - name: conjur-appliance
         image: {{ CONJUR_APPLIANCE_IMAGE }}
         command: ["/tmp/seedfile/start-follower.sh"]
@@ -136,6 +142,12 @@ spec:
         env:
 
           # from CONJUR_CONFIG_MAP
+          - name: CONJUR_APPLIANCE_URL
+            valueFrom:
+              configMapKeyRef:
+                name: {{ CONJUR_CONFIG_MAP }}
+                key: CONJUR_MASTER_URL
+
           - name: CONJUR_MASTER_PORT
             valueFrom:
               configMapKeyRef:
